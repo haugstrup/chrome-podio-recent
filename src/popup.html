@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style type="text/css">
+      body {
+        width:600px;
+        font-family:Arial;
+        font-size:16px;
+        color:#333;
+      }
+      .section {
+        width:280px;
+        padding:0 0 0 20px;
+        float:left;
+        min-height:100px;
+      }
+      .section:first-child {
+        border-left:none;
+        padding:0 20px 0 0;
+      }
+      h1 {
+        font-size:18px;
+        margin:0;
+        padding:0;
+        font-weight:normal;
+        border-bottom:1px solid #999;
+      }
+      ul {
+        margin:0;
+        padding:10px 0 10px;
+      }
+      li {
+        list-style-type:none;
+        margin:0;
+        padding:0;
+        line-height:130%;
+        margin-bottom:7px;
+        overflow:hidden;
+        position:relative;
+        height:20px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+      li a {
+        padding-left:20px;
+        display:block;
+      }
+      li .icon {
+        display:block;
+        background:url('pins.png') 0 -16px no-repeat; /*blank*/
+        width:16px;
+        height:16px;
+        position:absolute;
+        top:2px;
+        left:0;
+        cursor:pointer;
+      }
+      li:hover .icon {
+        background:url('pins.png') 0 -32px no-repeat; /*lightgrey*/
+      }
+      li .icon.sticky, li:hover .icon.sticky {
+        background-position:0 0; /*solidcolor*/
+      }
+      a {
+        color:#4784ad;
+        text-decoration:none;
+      }
+      span.space {
+        font-size:10px;
+        margin-left:5px;
+        color:#999;
+      }
+
+    </style>
+  </head>
+  <body>
+    <div id="wrapper">
+      <div class="section">
+        <h1>Recent Apps</h1>
+        <ul id="apps"></ul>
+      </div>
+      <div class="section">
+        <h1>Recent Items</h1>
+        <ul id="items"></ul>
+      </div>
+    </div>
+    <script src="../lib/jquery.min.js"></script>
+    <script src="../lib/underscore-min.js"></script>
+    <script type="text/javascript">
+      var collection = chrome.extension.getBackgroundPage().collection || null;
+
+      function updateList() {
+        $('#apps').empty();
+        for (i in collection.apps) {
+          $('#apps').append('<li><div class="icon '+(collection.apps[i].sticky ? 'sticky' : '')+'"></div><a href="'+collection.apps[i].url+'">'+collection.apps[i].title+'</a></li>');
+        }
+        //<span class="space">'+collection.apps[i].space+'</span>
+        for (i in collection.items) {
+          $('#items').append('<li><div class="icon '+(collection.items[i].sticky ? 'sticky' : '')+'"></div><a href="'+collection.items[i].url+'">'+collection.items[i].title+'</a></li>');
+        }
+      }
+      if (collection) {
+        updateList();
+      }
+
+      $('a').click(function(){
+        chrome.tabs.create({url: $(this).attr('href')});
+        return false;
+      });
+
+      $('div.icon').click(function(){
+        var current_url = $(this).parent().find('a').attr('href');
+        var type = $(this).parents('ul').attr('id');
+        if ($(this).hasClass('sticky')) {
+          // Turn off sticky
+          $(this).removeClass('sticky');
+          chrome.extension.getBackgroundPage().makeUnsticky(type, current_url);
+        }
+        else {
+          // Turn on sticky
+          $(this).addClass('sticky');
+          chrome.extension.getBackgroundPage().makeSticky(type, current_url);
+        }
+
+        // Resort collection (won't apply until next time popup is opened)
+        chrome.extension.getBackgroundPage().sortCollection(type);
+
+
+      });
+    </script>
+  </body>
+</html>

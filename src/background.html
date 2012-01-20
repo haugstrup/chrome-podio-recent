@@ -1,0 +1,97 @@
+<script src="../lib/jquery.min.js"></script>
+<script src="../lib/underscore-min.js"></script>
+<script type="text/javascript">
+  var storedCollection = localStorage.getItem('collection');
+  var collection = {'apps':[],'items':[]};
+  if (storedCollection) {
+    collection = JSON.parse(storedCollection);
+  }
+  function checkPage(tabId, changeInfo, tab) {
+    if (changeInfo.status == 'complete') {
+      if (tab.url.match(/https:\/\/[^\/]+\.podio\.com\/[^\/]+\/app\/view\/[0-9]+\/?/) || tab.url.match(/https:\/\/[^\/]+\.podio\.com\/[^\/]+\/apps\/[0-9]+\/?/) && !tab.url.match(/\/new$/)) {
+        addToCollection('apps', tab);
+      }
+      else if (tab.url.match(/https:\/\/[^\/]+\.podio\.com\/[^\/]+\/item\/[0-9]+\/?$/)) {
+        addToCollection('items', tab);        
+      }
+    }
+  };
+
+  function addToCollection(type, tab) {
+    var normalized_url = tab.url.indexOf('?') > -1 ? tab.url.substr(0, tab.url.indexOf('?')) : tab.url;
+    var existing = _.find(collection[type], function(item){return item.url == normalized_url});
+    var now = new Date();
+    if (!existing) {
+      if (collection[type].length >= 10) {
+        var popped = collection[type].pop();
+
+        // If the last element is sticky, add it back into collection and return
+        if (popped.sticky === true) {
+          collection[type].push(popped);
+          return;
+        }
+      }
+      collection[type].unshift({
+        'url' : normalized_url, 
+        'title' : tab.title.substr(0, tab.title.indexOf('|')),
+        'space' : tab.title.substr(tab.title.indexOf('|')+2).toLowerCase(),
+        'sticky' : false,
+        'timestamp' : now.getTime()
+      });
+
+      sortCollection(type);
+      localStorage.setItem('collection', JSON.stringify(collection));
+    }
+    else {
+      // Float existing link to top
+      if (!existing.sticky) {
+        
+        collection[type] = _.reject(collection[type], function(elem) {return existing.url == elem.url;});
+        existing.timestamp = now.getTime();
+        collection[type].unshift(existing);
+
+        // Resort collection to get stickies on top again
+        sortCollection(type);
+        console.log(collection[type]);
+        localStorage.setItem('collection', JSON.stringify(collection));
+      }
+    }
+  }
+
+  var makeSticky = function(type, current_url) {
+    _.each(collection[type], function(elem, index, list){
+      if (current_url == elem.url) {
+        list[index].sticky = true;
+      }
+    });
+    localStorage.setItem('collection', JSON.stringify(collection));
+  }
+
+  var makeUnsticky = function(type, current_url) {
+    _.each(collection[type], function(elem, index, list){
+      if (current_url == elem.url) {
+        list[index].sticky = false;
+      }
+    });
+    localStorage.setItem('collection', JSON.stringify(collection));
+  }
+
+  var sortCollection = function(type) {
+    console.log('sorting');
+    collection[type] = _.sortBy(collection[type], function(item){
+      var item_sticky = item.sticky === true ? 'z-' : 'a-'
+      return item_sticky+item.timestamp;
+    });
+    collection[type].reverse();
+    localStorage.setItem('collection', JSON.stringify(collection));
+  }
+
+  // Listen for any changes to the URL of any tab.
+  chrome.tabs.onUpdated.addListener(checkPage);
+
+  /* 
+  TODO: Remove inbox count from titles
+  TODO: "Clear all" button to reset collection
+  TODO: share current page on podio (bookmarklet)
+  */
+</script>

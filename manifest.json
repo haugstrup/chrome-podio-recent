@@ -1,0 +1,32 @@
+{
+
+  "name": "Recent Podio Apps & Items",
+  "version": "1.0",
+  "description": "Shows the most recent Podio apps and items you have visited",
+  "icons": { "16": "icons/podio_16.png",
+             "48": "icons/podio_48.png",
+            "128": "icons/podio_128.png" },
+
+  // http://code.google.com/chrome/extensions/browserAction.html
+  "browser_action": {
+    "default_icon":  "icons/podio_128.png", // optional
+    "default_title": "Action Title",     // optional; shown in tooltip
+    "default_popup": "src/popup.html"    // optional
+  },
+
+  /*****************************************************************************
+   PERMISSIONS
+   ****************************************************************************/
+
+  // http://code.google.com/chrome/extensions/manifest.html#permissions
+  "permissions": [
+    "tabs"
+  ],
+
+  // http://code.google.com/chrome/extensions/background_pages.html */
+  "background_page": "src/background.html",
+
+  // leave this here so you don't get trailing comma errors above
+  "null": []
+
+}
